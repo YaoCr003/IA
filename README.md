@@ -198,64 +198,6 @@ Se realizó un análisis exploratorio de datos el objetivo de comprender mejor e
 
 ---
 
-## Distribución de la Variables Ojetivo
-
-La siguiente visualización muestra la distribución de la variable objetivo:
-
-```python
-depression_label
-```
-![alt text](/images/image.png)
-
-La distribución observada permite validar si el problema puede abordarse correctamente mediante clasificación binaria supervisada
-
-## Distribución de Edades
-
-La siguiente gráfica representa la distribución de edades dentro del dataset:
-
-![alt text](images/Edad.png)
-
-La mayoria de los registros se concentra en determinados rangos de edad, lo cual puede influir en la capacidad de generalización del modelo. Esto significa que el modelo podría funcionar mejor para grupos de edad más representados dentro del dataset
-
-## Distribución por Género
-
-La siguiente gráfica muestra la distribución de registros por género:
-
-![alt text](images/Genero.png)
-
-El análisis por género permite detectar posibles sesgos demográficos dentro del dataset. Mantener una distribución relativamente equilibrada ayuda a reducir problemas de sesgos durante el entrenamiento del modelo.
-
-## Matriz de Correlación
-
-![alt text](images/MC.png)
-
-Esta matriz muestra la correlación entre variables numericas del dataset, dicha matriz permitió identificar relaciones importantes entre variables psicológicas y hábitos digitales.
-
-Se observaron las siguientes relaciones:
-
-Se observó una correlación positiva entre las horas de uso de redes sociales y la variable `depression_label` (0.18).
-Aunque la correlación no es alta, el resultado sugiere que un mayor tiempo de uso de redes sociales podría relacionarse con mayores indicadores de depresión en adolescentes.
-
-Así mismo, también se observa una correlación negativa entre las variables hora de sueño y depresión, ya que mientras menos horas duermen, más depresión aparece.
-
-De igual forma, se observó una correclación positiva de las variables de `stress_level` y `anxiety_level` con `depression_label`(0.17). Esto indica que entre más altos niveles de estrés y ansiedad tiende a relacionarse con mayores indicadores depresión
-
----
-
-# Preprocesamiento de Datos
-
-Antes de entrenar el modelo, se realizaron distintas técnicas de limpieza y transformación con el objetivo de preparar el dataset y garantizar que los pudieran trabajar correctamente con la información disponible.
-Para comenzar se realizó una exploración inicial del dataset utilizando funciones como:
-
-```python
-df.head() # Mostar los primeros 5 datos del dataset
-df.info() # Información general 
-df.shape() # Muestra el tamaño del dataset (Filas, columnas)
-```
-
----
-
-
 # Tecnologías y Librerías
 
 ## Lenguaje utilizado
@@ -280,40 +222,187 @@ scikit-learn
 
 ---
 
-# Pipeline de Preparación de Datos
+## Preprocesamiento de Datos
 
-El pipeline implementado en el notebook incluye las siguientes etapas:
+Antes de entrenar el modelo, se realizó una etapa de exploración y preparación de los datos, esto con el objetivo de comprender la estructura del dataset, identificar posibles problemas al transformar las variables a un formato adecuado.
 
-1. Carga del dataset
-2. Exploración inicial de datos
-3. Análisis exploratorio (EDA)
-4. Detección de valores nulos
-5. Eliminación de duplicados
-6. Transformación de variables categóricas
-7. Separación de variables predictoras y variable objetivo
-8. División de datos de entrenamiento y prueba
-9. Escalamiento de variables numéricas
+Para ello primero cargamos el dataset
 
-# Visualizaciones Realizadas
+```python
+df = pd.read_csv("../data/Teen_Mental_Health_Dataset.csv")
+```
+Esto con el fin de almacenar la información facilitando su manipulación, análisis y procesamiento.
 
-Durante el análisis exploratorio se realizaron las siguientes visualizaciones:
+## Exploración inicial del Dataset
 
-- Distribución de la variable objetivo
-- Histograma de edades
-- Distribución de género
-- Matriz de correlación entre variables numéricas
+A pesar de ya tener los datos almacenados, el objetivo no es únicamente mostrar datos, si no tambien entender, cuantas variables existen, que representan, los tipos de datos y si existen valores faltantes.
 
-Estas visualizaciones permiten comprender mejor el comportamiento y estructura del dataset antes del entrenamiento del modelo.
+```python
+df.head()
+```
+![alt text](images/head.png)
 
-# División de Datos
+Esto es para revisar las primeras filas del dataset para verificar que la información se haya cargado correctamente.
+
+```python
+df.shape
+```
+![alt text](images/shape.png)
+
+Esto nos ayuda a concer el número total de filas y columnas.
+
+```python
+df.info()
+```
+![alt text](images/info.png)
+
+Esta función sirve para conocer el tipos de dato de cada variable, también verifica la presencia de valores faltantes.
+
+```python
+df.isnull().sum()
+```
+![alt text](images/isnull.png)
+
+Esta función calcula la cantidad de valores faltantes en cada columna, lo cual en mi modelo señalo que no existe ningun valor faltante. Esto es importante porque los valores nulos pueden afectar el entrenamiento del modelo y generar resultados correctos.
+
+```python
+df.duplicated().sum()
+```
+![alt text](images/duplicate.png)
+
+Tambien se verificó si exiten registros repetidos, esto porque en el entrenamiento puede generar sesgos, es decir, que algunas observaciones tendrían mas peso que otras. En este caso no se marco algun valor duplicado
+
+```python
+df = df.drop_duplicates()
+```
+Esta función elimina los datos duplicados, en este caso no es obligatorio implementarlo, ya que no existian valores duplicados, sin embargo, como parte del seguimiento de la estructura mostrada en la guía, lo implemente.
+
+## Análisis Exploratorio de Datos (EDA)
+
+El análisis exploratorio nos ayuda a comprender de una manera mas clara la distribución de las variables y detectar patrones que pudieran influir en la predicción de depresión.
+
+### Distribución de la variable objetivo
+
+Antes de entrenar un modelo de clasificación es importante verificar si las clases estan balanceadas, ya que un fuerte desbalance podría provocar que el modelo favorezca la clase mayoritaria.
+
+```python
+df["depression_label"].value_counts()
+```
+![alt text](images/VO.png)
+
+La distribución muestra un desbalance significativo entre las clases, lo que implica que el modelo podría tender a predecir con mayor frecuencia la clase mayoritaria. Debido a esta característica, métricas como el accuracy podrían resultar engañosas.
+
+### Distribución de edades
+
+La edad puede influir significativamente en la salud mental de los adolescentes. Analizar su distribución permite identificar grupos de edad predominantes y posibles sesgos de representación.
+
+```python
+df["age"].hist()
+```
+![alt text](images/Edad.png)
+
+En esto caso, los registros se encuentran distribuidos entre los 13 y 19 años, con una representación relativamente equilibrada en todos los grupos de edad. 
+
+### Distribución de género
+
+El análisis de esta variable permite identificar posibles desbalances que podrían influir en el comportamiento del modelo durante el entrenamiento.
+
+```python
+df["gender"].value_counts()
+```
+![alt text](images/Genero.png)
+
+La distribución es relativamente equilibrada, ya que ambos grupos cuentan con una cantidad similar de registros
+
+### Matriz de Correlación
+
+La correlación permite identificar relaciones lineales entre variables y detectar cuáles podrían tener una mayor influencia sobre la variable objetivo.
+
+```python
+plt.figure(figsize=(12,8))
+
+sns.heatmap(
+    df.corr(numeric_only=True),
+    annot=True,
+    cmap="coolwarm"
+)
+
+plt.title("Matriz de Correlación")
+
+plt.show()
+```
+
+Se observó una correlación positiva entre las horas de uso de redes sociales y depression_label (0.18), sugiriendo que un mayor tiempo de uso podría estar asociado con una mayor presencia de indicadores de depresión.
+Las horas de sueño presentaron una correlación negativa con la depresión, indicando que menores periodos de descanso tienden a relacionarse con mayores niveles de afectación emocional.
+Las variables stress_level y anxiety_level mostraron correlaciones positivas con depression_label (aproximadamente 0.17).
+
+### Definición de Variables Predictoras y Variable Objetivo
+
+Para definir la información que utilizará el modelo, es necesario separar la variable que se desea predecir de las variables que serán utilizadas como entrada del modelo.
+
+```python
+y = df["depression_label"]
+x = df.drop("depression_label", axis=1)
+```
+
+Para este caso, la variable `depression_label` se define como objetivo y el resto como predictoras.
+
+### Transformación de Variables Categóricas
+
+Los algoritmos de Machine Learning trabajan principalmente con valores numéricos. Por ello, las variables categóricas fueron transformadas mediante One-Hot Encoding.
+
+```python
+x = pd.get_dummies(x, drop_first=True)
+```
+Los algoritmos de Machine Learning, incluyendo algunos modelos, realizan operaciones matemáticas sobre los datos de entrada. Debido a ello, no pueden interpretar directamente valores de texto. Para realizar esta transformación se utilizó la técnica One-Hot Encoding, esta técnica crea una nueva columna para cada categoría posible y asigna valores binarios: (0) la observación pertenece a esa categoría, (1) la observación no pertenece a esa categoría.
+
+Para evitar redundancia en la información y reducir los problemas de multicolinealidad durante el entrenamiento del modelo, se elimina una de las categorías
+
+```python
+drop_first=True
+```
+### División de Datos
+
+Una vez finalizado el preprocesamiento de los datos, el conjunto de información fue dividido en dos subconjuntos: uno destinado al entrenamiento del modelo y otro para evaluar su desempeño, ya que si se entrenara y evaluara con los mismo datos el modelo lanzara resultados aparentemente buenos porque ya ha visto todas las observaciones durante el aprendizaje, sin ambargo esto no garantiza que funcione correctamente con nuevos datos.
 
 Se realizó una separación de:
 
 - 80% para entrenamiento
 - 20% para prueba
 
-Esto permite entrenar y evaluar correctamente futuros modelos de Machine Learning.
+```python
+x_train, x_test, y_train, y_test = train_test_split(
+    x,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+```
+Esta proporción es una de las más utilizadas en problemas de clasificación, ya que proporciona suficientes datos para que el modelo aprenda y, al mismo tiempo, reserva una cantidad adecuada de observaciones para evaluar su rendimiento
 
+Después de dividir los datos en conjuntos de entrenamiento y prueba, se realizó un proceso de escalamiento sobre las variables predictoras utilizando la técnica de estandarización, debido a que las variables del dataset no necesariamente se encuentran en la misma escala y cuando existe una diferencia entre escalas, algunas pueden ejercer una influencia mayor durante el entrenamiento.
+
+```python
+scaler = StandardScaler()
+```
+Este procedimiento evita que información del conjunto de prueba influya en el proceso de aprendizaje, lo cual garantiza una evaluación más realista del modelo.
+
+```python
+print("\nPrimeras filas escaladas:")
+print(x_train_scaled[:5])
+
+print("\nPrimeras etiquetas:")
+print(y_train.head())
+```
+![alt text](images/resultA1.png)
+
+Los valores positivos y negativos del escalamiento, confirma que el proceso de estandarización se realizó correctamente sobre las variables predictoras. Además, se observa que ninguna característica domina por su magnitud numérica, permitiendo que todas contribuyan de manera más equilibrada durante el entrenamiento
+
+---
+
+## Resultados
+
+Una vez completadas las etapas de división y escalamiento, se realizó una inspección de los datos resultantes, 
 ---
 
 # Ejecución del Proyecto
@@ -345,8 +434,9 @@ IA/
 ├── notebooks/
 │   └── ia.ipynb
 │
-├── images/
-│   └── image.png
+├── images
+│ 
+├── docs
 │
 └── README.md
 ```
@@ -360,19 +450,10 @@ https://www.kaggle.com/datasets/algozee/teenager-menthal-healy
 
 ---
 
-# Recomendaciones de Visualización
-
-Para una mejor visualización del código en Visual Studio Code se recomienda utilizar la extensión:
-
-- Better Comments:
-
-![alt text](./images/image.png)
-
----
-
 # Modificaciones Avance 1
 
-
+Se implmento mas información dando conceptos e interprentando los resultados
+---
 
 
 # Avance 2: Implementación del Modelo
