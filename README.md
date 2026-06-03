@@ -327,6 +327,8 @@ sns.heatmap(
     cmap="coolwarm"
 )
 
+![alt text](images/MC.png)
+
 plt.title("Matriz de Correlación")
 
 plt.show()
@@ -400,11 +402,6 @@ Los valores positivos y negativos del escalamiento, confirma que el proceso de e
 
 ---
 
-## Resultados
-
-Una vez completadas las etapas de división y escalamiento, se realizó una inspección de los datos resultantes, 
----
-
 # Ejecución del Proyecto
 
 ## 1. Clonar el repositorio
@@ -434,10 +431,17 @@ IA/
 ├── notebooks/
 │   └── ia.ipynb
 │
-├── images
+├── images/
 │ 
-├── docs
+├── docs/
 │
+├── models/
+│   ├── columns.pkl
+│   ├── drepression_model.keras
+│   └── scaler.pkl
+│
+├── app.py
+│ 
 └── README.md
 ```
 
@@ -627,7 +631,7 @@ Finalmente imprimimos los resultados obtenidos:
 ```python
 print(classification_report(y_test, y_pred))
 ```
-![alt text](./images/Result.png)
+![alt text](./images/Results.png)
 
 Los resultados obtenidos muestran que el modelo Logistic Regression alcanzó una accuracy de 99%,que indica el modelo acertó aproximadamente el 99% de las predicciones totales. Sin embargo, debido al desbalance presente en el dataset, fue necesario analizar métricas adicionales como Precision, Recall y F1-Score.
 
@@ -636,3 +640,157 @@ El modelo presentó un desempeño casi perfecto para la clase negativa (0), iden
 El recall obtenido para la clase positiva fue de 0.67, lo que significa que algunos casos reales de depresión no fueron detectados por el modelo
 
 El F1-Score de 0.80 refleja un equilibrio adecuado entre precisión y capacidad de detección, aunque todavía existe margen de mejora en la identificación de adolescentes con posibles indicadores de depresión.
+
+# Modificaciones de avance 2
+
+Se implemento la red neuronal para poder hacer el despliegue de una aplicación que al introducir datos genere la predicción, de igual forma observar los resultados del modelo con la red neuronal. Se ajusto la arquitectura del proyecto
+
+# Avance 3
+
+## Implementación de la Red Neuronal
+
+### Arquitectura MLP
+
+```python
+nn_model = Sequential([
+
+    Dense(
+        64,
+        activation="relu",
+        input_shape=(x_train_scaled.shape[1],)
+    ),
+
+    Dense(
+        32,
+        activation="relu"
+    ),
+
+    Dense(
+        1,
+        activation="sigmoid"
+    )
+
+])
+```
+
+Usamos dos capas ocultas de 64 y 32 neuronas, permitiendo que el modelo aprenda las relaciones complejas entre las variables de entrada. A diferencia de modelos lineales como la regresión logística, una red neuronal puede detectar patrones no lineales.
+
+### Compilación 
+
+```python
+
+nn_model.compile(
+    optimizer="adam",
+    loss="binary_crossentropy",
+    metrics=["accuracy"]
+) 
+
+```
+
+Una vez establecido la arquitectura, procederemos ahora a explicarle indicar como es que la red neuronal aprendera, como es que actualizara los pesos, en este caso "adam" el cual es un optimizardo encargado de ajustar los pesos de la red, es decir que cada vez que se equivoca, Adam decide cuánto deben cambiar los pesos para mejorar la siguiente predicción, que tan equivocada esta la red `loss` y las métrica deseas observar mientras la red entrena `metrics`
+
+### Checkpoint
+
+```python
+
+checkpoint = ModelCheckpoint(
+    "best_depression_model.keras",
+    monitor="val_accuracy",
+    save_best_only=True,
+    verbose=1
+) 
+```
+
+Ahora no solo necesitamos el decirle a la red como es que aprenderá, si no tambien se requiere guardar el mejor modelo obtenido durante las épocas de entrenamiento, sin esto guardara el desempeño de la ultima época y en ocaciones no es el mejor.
+
+### Clase pesos
+
+``` python
+
+lass_weights = compute_class_weight(
+    class_weight="balanced",
+    classes=np.unique(y_train),
+    y=y_train
+)
+
+class_weights = dict(
+    enumerate(class_weights)
+)
+
+```
+
+Se mencionó anteriormente que exitistia un desbalanceo en los datos de las clases, ya que la variable ojetivo `drepression_label` tiene 1169 registros de "No depresion" y 31 de "Depresión", si esto lo entrenamos sin hacer el reajuste de pesos, el modelo siempre predecira "No depresión" y esto generara problemas con las metricas Precision, Recall y F1-Score, dando como resultado 0 porque nunca detecta casos reales de depresión.
+
+### Entrenamiento
+
+``` python
+
+history = nn_model.fit(
+    x_train_scaled,
+    y_train,
+    epochs=100,
+    batch_size=16,
+    validation_split=0.2,
+    callbacks=[checkpoint],
+    class_weight=class_weights,
+    verbose=1
+)
+
+```
+
+Ya tenemos la arquitectura, despues se le dijo a led como aprender, guardar el mejor modelo y función de perdida y pesos de la clase, todo eso se pone en practica durante el entrenamiento. El recorrido de todos los datos lo hara en 100 epocas es decir 100 veces, en registros de 16, despues se manda a llamar al checkpoint para que guarde la mejor versión del modelo, despues llamamos a la clase de los pesos, dandole a enteneder a la red que que fallar en detectar "Depresión" es mas grave, con ello nos ayuda a mejorar el Recall.
+
+### Vizualizacion del entrenamiento
+
+#### Accuracy
+
+![alt text](images/FitRN/GAccu.png)
+
+La gráfica muestra la evolución de la precisión del modelo a medida que avanzan las épocas. Comparando la precisión obtenida sobre los datos que la red está utilizando para aprender con la precisión obtenida sobre el 20% de datos reservado
+
+#### Loss
+
+![alt text](images/FitRN/loss.png)
+
+Esta grafica muestra el error que comente la red neuronal sobre los datos de entrenamiento y los datos que la red no utilizó para ajustar sus pesos
+
+### Predicción
+
+``` python
+y_pred_prob = nn_model.predict( x_test_scaled )
+```
+
+Aquí la red recibe los datos de prueba escalados, y genera una probabilidad por cada registro, sin embargo para trabajar calacular las metricas se necesitan converitir las probabilidades a clases:
+
+``` python
+y_pred_nn = (y_pred_prob > 0.3).astype(int)
+```
+
+Se compara cada probabilidad con un umbral en este caso _0.3_ para clasificar cada probabilidad si la probabilidad es mayor a 0.3 pasa a la clase (1) si no a la clase (0)
+
+### Métricas
+
+``` python
+accuracy_nn = accuracy_score(y_test, y_pred_nn)
+precision_nn = precision_score(y_test, y_pred_nn)
+recall_nn = recall_score(y_test, y_pred_nn)
+f1_nn = f1_score(y_test,y_pred_nn)
+```
+
+Todas las metricas se calculan comparando los resultados reales `y_test` contra las predicciones de la red `y_pred_nn`.
+
+![alt text](images/FitRN/Result_nn.png)
+
+Como resultado la red neuronal identifica muy bien a los adolescentes que no presentan depresión. Sin embargo para identificar a los adolescentes con depresión, el recall 66% la red detecto 4 de los 6 casos reales de depresión, precisión del 50%, predijo que la mitad de los casos donde hay depresión solo la mitad fueron casos reales.
+
+![alt text](images/FitRN/MConfuNN.png)
+
+En la matriz podermos ver lo siguiente:
+- 4 adolescentes los marco que si tenian depresion y el modelo predijo que si. (TP)
+- 234 adolescentes no tenían depresión y fueron clasificados correctamente. (TN)
+- 4 Adolescentes no tenían depresión pero el modelo dijo que sí. (FP)
+- 2 adolescentes tenían depresión pero el modelo no los detectó. (FN)
+
+
+
+
