@@ -456,7 +456,7 @@ https://www.kaggle.com/datasets/algozee/teenager-menthal-healy
 
 # Modificaciones Avance 1
 
-Se implmento mas información dando conceptos e interprentando los resultados
+Se implemento mas información dando conceptos e interprentando los resultados
 ---
 
 
@@ -1057,7 +1057,7 @@ class_weights = dict(
 )
 ```
 
-Como se mencionó anteriormente que exitistia un desbalanceo en los datos de las clases, ya que la variable ojetivo `drepression_label` tiene 1169 registros de "No depresion" y 31 de "Depresión", si esto lo entrenamos sin hacer el reajuste de pesos, el modelo siempre predecira "No depresión" y esto generara problemas con las metricas Precision, Recall y F1-Score, dando como resultado 0 porque nunca detecta casos reales de depresión.
+Ya que la variable ojetivo `drepression_label` tiene 1169 registros de "No depresion" y 31 de "Depresión", si esto lo entrenamos sin hacer el reajuste de pesos, el modelo siempre predecira "No depresión" y esto generara problemas con las metricas Precision, Recall y F1-Score, ya que incluso pueda dar como resultado 0 porque nunca detecta casos reales de depresión.
 
 ``` python
 
@@ -1081,6 +1081,6 @@ En la parte del entrenamiento llamamos a la clase de los pesos, dandole a entend
 ## Con pesos
 ![alt text](images/Pesos/con_pesos.png)
 
-Al comparar los resultados, se observa que la Accuracy general se mantiene prácticamente igual; sin embargo, las métricas asociadas a la clase de depresión muestran una mejora. La Precision aumentó de 0.60 a 0.75, lo que indica que las predicciones positivas realizadas por la red son más confiables y presentan menos falsos positivos. Asimismo, el F1-Score aumentó de 0.55 a 0.60, reflejando un mejor equilibrio entre precisión y sensibilidad. Esto demuestra que el uso de pesos permitió que el modelo prestara mayor atención a la clase minoritaria
+Al comparar los resultados, se observa que la Accuracy general se mantiene prácticamente igual, sin embargo, las métricas asociadas a la clase de depresión muestran una mejora. La Precision aumentó de 0.60 a 0.75, lo que indica que las predicciones positivas realizadas por la red son más confiables y presentan menos falsos positivos. Asimismo, el F1-Score aumentó de 0.55 a 0.60, reflejando un mejor equilibrio entre precisión y sensibilidad. Esto demuestra que el uso de pesos permitió que el modelo prestara mayor atención a la clase minoritaria
 
 
