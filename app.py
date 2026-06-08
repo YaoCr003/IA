@@ -173,7 +173,7 @@ if st.button("Predecir"):
     )[0][0]
 
     prediction = int(
-        probability > 0.5
+        probability > 0.3
     )
 
     #* Resultados

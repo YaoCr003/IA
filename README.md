@@ -703,23 +703,6 @@ checkpoint = ModelCheckpoint(
 
 Ahora no solo necesitamos el decirle a la red como es que aprenderá, si no tambien se requiere guardar el mejor modelo obtenido durante las épocas de entrenamiento, sin esto guardara el desempeño de la ultima época y en ocaciones no es el mejor.
 
-### Clase pesos
-
-``` python
-
-lass_weights = compute_class_weight(
-    class_weight="balanced",
-    classes=np.unique(y_train),
-    y=y_train
-)
-
-class_weights = dict(
-    enumerate(class_weights)
-)
-
-```
-
-Se mencionó anteriormente que exitistia un desbalanceo en los datos de las clases, ya que la variable ojetivo `drepression_label` tiene 1169 registros de "No depresion" y 31 de "Depresión", si esto lo entrenamos sin hacer el reajuste de pesos, el modelo siempre predecira "No depresión" y esto generara problemas con las metricas Precision, Recall y F1-Score, dando como resultado 0 porque nunca detecta casos reales de depresión.
 
 ### Entrenamiento
 
@@ -732,13 +715,12 @@ history = nn_model.fit(
     batch_size=16,
     validation_split=0.2,
     callbacks=[checkpoint],
-    class_weight=class_weights,
     verbose=1
 )
 
 ```
 
-Ya tenemos la arquitectura, despues se le dijo a led como aprender, guardar el mejor modelo y función de perdida y pesos de la clase, todo eso se pone en practica durante el entrenamiento. El recorrido de todos los datos lo hara en 100 epocas es decir 100 veces, en registros de 16, despues se manda a llamar al checkpoint para que guarde la mejor versión del modelo, despues llamamos a la clase de los pesos, dandole a enteneder a la red que que fallar en detectar "Depresión" es mas grave, con ello nos ayuda a mejorar el Recall.
+Ya tenemos la arquitectura, despues se le dijo a led como aprender, guardar el mejor modelo y función de perdida y pesos de la clase, todo eso se pone en practica durante el entrenamiento. El recorrido de todos los datos lo hara en 100 epocas es decir 100 veces, en registros de 16, despues se manda a llamar al checkpoint para que guarde la mejor versión del modelo.
 
 ### Vizualizacion del entrenamiento
 
@@ -791,6 +773,314 @@ En la matriz podermos ver lo siguiente:
 - 4 Adolescentes no tenían depresión pero el modelo dijo que sí. (FP)
 - 2 adolescentes tenían depresión pero el modelo no los detectó. (FN)
 
+### Guardar modelo
 
+``` python
+best_model = load_model("./best_depression_model.keras")
+best_model.save("../models/depression_model.keras")
+```
+
+Se carga el mejor modelo que se detecto durante el entrenamiento, es decir, recupera la arquitectura, los pesos y la configuración aprendida por la red.
+Para después guardar una copia de ese modelo en la carpeta `models`, que sera utilizada posteriormente para realizar las predicciones sin necesidad de volver a entrenar.
+
+``` python
+joblib.dump(scaler, "../models/scaler.pkl")
+```
+De igual forma se guarda el objeto `StandardScaler` entrenado para poder aplicarlo a nuevos datos sin tener que volver a entrenar el modelo, ni recalcular el escalamiento.
+
+``` python
+joblib.dump(x.columns.tolist(), "../models/columns.pkl")
+```
+Por último almacenamos la estructura final de las variables utilizadas durante el entrenamiento, esto permite que, durante el despliegue del modelo, los nuevos datos que sean ingresados por el usuario sean transformados exactamente con las mismas columnas que fueron utilizadas para entrenar la red.
+
+## Aplicación y despligue
+
+Finalmente, se desarrollo una aplicación interactiva utilizando `Streamlit`, permitiendo que un usuario introduzca nuevos datos y obtenga una estimación de la probabilidad de depresión de manera automática. 
+
+### Carga de los artefactos entrenados
+
+``` python
+model = load_model("./models/depression_model.keras")
+scaler = joblib.load("./models/scaler.pkl")
+columns = joblib.load("./models/columns.pkl")
+```
+La idea es reutilizar lo apendido durante el entrenamiento, cargando la red neuronal entrenada, el `StandardScaler` entrando y las columnas generadas después del **One Hot Encoding**.
+
+### Creación de la interfaz
+
+```python
+st.title("Predicción de Depresión en Adolescentes")
+
+st.write(
+    "Ingrese los datos para estimar la probabilidad de depresión."
+)
+
+age = st.number_input(
+    "Edad",
+    min_value=13,
+    max_value=19,
+    value=16
+)
+
+gender = st.selectbox(
+    "Género",
+    ["female", "male"]
+)
+
+daily_social_media_hours = st.number_input(
+    "Horas diarias en redes sociales",
+    min_value=0.0,
+    max_value=24.0,
+    value=4.0
+)
+
+sleep_hours = st.number_input(
+    "Horas de sueño",
+    min_value=0.0,
+    max_value=12.0,
+    value=8.0
+)
+
+screen_time_before_sleep = st.number_input(
+    "Tiempo de pantalla antes de dormir (horas)",
+    min_value=0.0,
+    max_value=5.0,
+    value=1.0
+)
+
+academic_performance = st.slider(
+    "Rendimiento académico",
+    1,
+    10,
+    5
+)
+
+physical_activity = st.slider(
+    "Actividad física",
+    1,
+    10,
+    5
+)
+
+stress_level = st.slider(
+    "Nivel de estrés",
+    1,
+    10,
+    5
+)
+
+anxiety_level = st.slider(
+    "Nivel de ansiedad",
+    1,
+    10,
+    5
+)
+
+addiction_level = st.slider(
+    "Nivel de adicción",
+    1,
+    10,
+    5
+)
+
+platform_usage = st.selectbox(
+    "Plataforma más utilizada",
+    [
+        "Instagram",
+        "TikTok",
+        "Other"
+    ]
+)
+
+social_interaction_level = st.selectbox(
+    "Nivel de interacción social",
+    [
+        "low",
+        "medium",
+        "high"
+    ]
+)
+```
+Se construye la interfaz visual del usuario para que pueda ingresar nuevos datos y el modelo pueda generar una predicción de la variable objetivo, es decir, que pueda darle un resultado sobre la probabilidad que pueda tener ansiedad.
+
+### DataFrame
+
+```python
+data = pd.DataFrame([{
+
+    "age": age,
+    "gender": gender,
+    "daily_social_media_hours":
+        daily_social_media_hours,
+
+    "sleep_hours":
+        sleep_hours,
+
+    "screen_time_before_sleep":
+        screen_time_before_sleep,
+
+    "academic_performance":
+        academic_performance,
+
+    "physical_activity":
+        physical_activity,
+
+    "stress_level":
+        stress_level,
+
+    "anxiety_level":
+        anxiety_level,
+
+    "addiction_level":
+        addiction_level,
+
+    "platform_usage":
+        platform_usage,
+
+    "social_interaction_level":
+        social_interaction_level
+}])
+```
+Este DataFrame se creo para que la información tenga exactamente el mismo formato que el dataset utilizado durante el entrenamiento.
+
+### Tranformación de variables categóricas
+
+```python
+data = pd.get_dummies(
+    data,
+    drop_first=True
+)
+```
+Como se hizo durante el preprocesamiento del modelo, al saber que las redes neuronales trabajan con valores númericos, las varaibles categoricas deben transformarse mediante One Hot Encoding.
+
+### Restauración de columnas originales
+
+```python
+data = data.reindex(
+    columns=columns,
+    fill_value=0
+)
+```
+La restauración de columnas se realiza para garantizar que los nuevos datos tengan la misma estructura que los datos utilizados durante el entrenamiento.
+
+### Escalamiento de los datos
+
+```python
+data_scaled = scaler.transform(data)
+```
+
+Los datos son normalizados utilizando el mismo StandardScaler que fue entrenado previamente y con esto garantizamos que la red neuronal reciba los datos en la misma escala que utilizó durante el aprendizaje.
+
+### Predicción con la red neuronal
+
+```python
+probability = model.predict(
+    data_scaled
+)[0][0]
+```
+La red neuronal procesa los datos y genera una probabilidad.
+
+### Probabilidad
+
+```python
+prediction = int(
+    probability > 0.3
+)
+```
+La probabilidad se convierte en una descisión binaria, es decir, que si la probabilidad supera el umbral establecido `1 = Posible depresión` si no lo supera `0 = No depresión`
+
+### Resultados
+
+```python
+st.subheader("Resultado")
+
+    st.write(
+        f"Probabilidad de depresión: {probability:.2%}"
+    )
+
+    st.write(
+        f"Probabilidad de no depresión: {(1-probability):.2%}"
+    )
+
+    if prediction == 1:
+
+        st.error(
+            "Posible presencia de depresión"
+        )
+
+    else:
+
+        st.success(
+            "No se detectan indicadores de depresión"
+        )
+```
+
+Finalmente se muestran los resultados, lo que son el porcentaje estimado de depresión y la probabilidad de no depresión, así mismo se reflejara un mensaje interpretativo, si existe o no indicadores de depresión.
+
+
+## Visualización del dashboard
+
+### Indicadores de depresión:
+
+![alt text](./images/Dashboard/Dh1.png)
+![alt text](./images/Dashboard/Dh2.png)
+![alt text](./images/Dashboard/Dh3.png)
+
+### Resultados
+
+![alt text](./images/Dashboard/RSD.png)
+
+### Indicadores de no depresión:
+
+![alt text](./images/Dashboard/DhND.png)
+![alt text](./images/Dashboard/DhND2.png)
+![alt text](./images/Dashboard/DhND3.png)
+
+### Resultados
+
+![alt text](./images/Dashboard/RSND.png)
+
+# Refinamiento
+
+Debido al fuerte desbalance del conjunto de datos, donde los casos de depresión representan una pequeña parte del total de datos, se utilizarón pesos de clase, ya que esto permite asignar una _"penalización"_ mayor a los errores cometidos por la clase minoritaria, con el fin de obligar a la red neuronal a prestar más atención a los casos de depresión durante el entrenamiento y mejorando su capacidad de detección. 
+
+``` python
+
+class_weights = compute_class_weight(
+    class_weight="balanced",
+    classes=np.unique(y_train),
+    y=y_train
+)
+
+class_weights = dict(
+    enumerate(class_weights)
+)
+```
+
+Como se mencionó anteriormente que exitistia un desbalanceo en los datos de las clases, ya que la variable ojetivo `drepression_label` tiene 1169 registros de "No depresion" y 31 de "Depresión", si esto lo entrenamos sin hacer el reajuste de pesos, el modelo siempre predecira "No depresión" y esto generara problemas con las metricas Precision, Recall y F1-Score, dando como resultado 0 porque nunca detecta casos reales de depresión.
+
+``` python
+
+history = nn_model.fit(
+    x_train_scaled,
+    y_train,
+    epochs=100,
+    batch_size=16,
+    validation_split=0.2,
+    callbacks=[checkpoint],
+    class_weight=class_weights,
+    verbose=1
+)
+
+```
+En la parte del entrenamiento llamamos a la clase de los pesos, dandole a entender a la red que fallar en detectar "Depresión" es mas grave. Sin esto, la red neuronal tendería a favorecer la clase mayoritaria, obteniendo una alta exactitud pero una baja capacidad para detectar casos reales de depresión. Con los pesos, se obliga al modelo a prestar mayor atención a los casos positivos y mejorando métricas relevantes como Recall y F1-Score
+
+## Sin pesos
+![alt text](images/Pesos/sin_pesos.png)
+
+## Con pesos
+![alt text](images/Pesos/con_pesos.png)
+
+Al comparar los resultados, se observa que la Accuracy general se mantiene prácticamente igual; sin embargo, las métricas asociadas a la clase de depresión muestran una mejora. La Precision aumentó de 0.60 a 0.75, lo que indica que las predicciones positivas realizadas por la red son más confiables y presentan menos falsos positivos. Asimismo, el F1-Score aumentó de 0.55 a 0.60, reflejando un mejor equilibrio entre precisión y sensibilidad. Esto demuestra que el uso de pesos permitió que el modelo prestara mayor atención a la clase minoritaria
 
 
