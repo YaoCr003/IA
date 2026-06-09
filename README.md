@@ -327,7 +327,7 @@ sns.heatmap(
     cmap="coolwarm"
 )
 
-![alt text](images/MC.png)
+![alt text](./images/MC.png)
 
 plt.title("Matriz de Correlación")
 
@@ -1042,7 +1042,9 @@ Finalmente se muestran los resultados, lo que son el porcentaje estimado de depr
 
 # Refinamiento
 
-Debido al fuerte desbalance del conjunto de datos, donde los casos de depresión representan una pequeña parte del total de datos, se utilizarón pesos de clase, ya que esto permite asignar una _"penalización"_ mayor a los errores cometidos por la clase minoritaria, con el fin de obligar a la red neuronal a prestar más atención a los casos de depresión durante el entrenamiento y mejorando su capacidad de detección. 
+El conjunto de datos utilizado presentó un marcado desbalance entre las clases, ya que los registros correspondientes a depresión representaban una pequeña proporción del total. De acuerdo con He y García (2009) señalados en su artículo `Learning from Imbalanced Data` [Articulo 3](./docs/Learning_from_imbalanced_data.pdf), esta situación puede inducir sesgos hacia la clase mayoritaria y afectar negativamente la detección de eventos poco frecuentes. 
+
+Para mitigar este problema, se utilizarón pesos de clase, ya que esto permite asignar una _"penalización"_ mayor a los errores cometidos por la clase minoritaria, con el fin de obligar a la red neuronal a prestar más atención a los casos de depresión durante el entrenamiento y mejorando su capacidad de detección. 
 
 ``` python
 
@@ -1081,6 +1083,5 @@ En la parte del entrenamiento llamamos a la clase de los pesos, dandole a entend
 ## Con pesos
 ![alt text](images/Pesos/con_pesos.png)
 
-Al comparar los resultados, se observa que la Accuracy general se mantiene prácticamente igual, sin embargo, las métricas asociadas a la clase de depresión muestran una mejora. La Precision aumentó de 0.60 a 0.75, lo que indica que las predicciones positivas realizadas por la red son más confiables y presentan menos falsos positivos. Asimismo, el F1-Score aumentó de 0.55 a 0.60, reflejando un mejor equilibrio entre precisión y sensibilidad. Esto demuestra que el uso de pesos permitió que el modelo prestara mayor atención a la clase minoritaria
-
+Al comparar los resultados, se observa que la Accuracy general se mantiene prácticamente igual, sin embargo, las métricas asociadas a la clase de depresión muestran una mejora. La Precision aumentó de 0.60 a 0.75, lo que indica que las predicciones positivas realizadas por la red son más confiables y presentan menos falsos positivos. Asimismo, el F1-Score aumentó de 0.55 a 0.60, reflejando un mejor equilibrio entre precisión y sensibilidad. Esto demuestra que el uso de pesos permitió que el modelo prestara mayor atención a la clase minoritaria.
 
